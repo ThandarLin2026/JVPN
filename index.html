@@ -3,16 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JUE VPN Admin · PWA Ready</title>
+    <title>JUE VPN Admin · All-in-One PWA</title>
     
-    <!-- PWA Meta Tags -->
+    <!-- PWA Meta Tags (iOS) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JUE VPN Admin">
     <meta name="theme-color" content="#0f172a">
     
-    <!-- Web App Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Web App Manifest (inline data URI) -->
+    <link rel="manifest" href="data:application/manifest+json,{
+        %22name%22:%22JUE%20VPN%20Admin%22,
+        %22short_name%22:%22JUE%20Admin%22,
+        %22description%22:%22VPN%20Admin%20Panel%22,
+        %22start_url%22:%22.%22,
+        %22display%22:%22standalone%22,
+        %22background_color%22:%22%230f172a%22,
+        %22theme_color%22:%22%230f172a%22,
+        %22icons%22:[{
+            %22src%22:%22https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png%22,
+            %22sizes%22:%22512x512%22,
+            %22type%22:%22image/png%22,
+            %22purpose%22:%22any%20maskable%22
+        }]
+    }">
+    
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png">
     
@@ -284,35 +299,86 @@
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 bg-slate-900 text-white rounded-2xl shadow-2xl translate-y-20 opacity-0 transition-all font-bold pointer-events-none text-sm"></div>
 
     <script>
-        // ========== PWA Setup ==========
+        // ========== PWA Setup (All in one) ==========
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
 
+        // beforeinstallprompt event ကိုဖမ်းမယ်
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             installBtn.classList.remove('hidden');
+            console.log('beforeinstallprompt fired');
         });
 
+        // install button ကိုနှိပ်ရင် prompt တက်မယ်
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to the install prompt: ${outcome}`);
+            console.log(`User response: ${outcome}`);
             deferredPrompt = null;
             installBtn.classList.add('hidden');
         });
 
+        // အောင်မြင်စွာ install လုပ်ပြီးသွားရင်
         window.addEventListener('appinstalled', () => {
-            console.log('PWA was installed');
+            console.log('PWA installed successfully');
             installBtn.classList.add('hidden');
         });
 
-        // Register Service Worker
+        // Service Worker ကို blob URL နဲ့ register လုပ်မယ် (သီးခြားဖိုင်မလိုဘူး)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').then(reg => {
-                    console.log('Service Worker registered:', reg);
+                // Service worker code ကို string အနေနဲ့ရေးမယ်
+                const swCode = `
+                    const CACHE_NAME = 'jue-vpn-cache-v1';
+                    const urlsToCache = [
+                        '.',
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                        'https://cdn.tailwindcss.com',
+                        'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+                        'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+                        'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
+                        'https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png'
+                    ];
+
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => cache.addAll(urlsToCache))
+                        );
+                    });
+
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(response => response || fetch(event.request))
+                        );
+                    });
+
+                    self.addEventListener('activate', event => {
+                        event.waitUntil(
+                            caches.keys().then(cacheNames => {
+                                return Promise.all(
+                                    cacheNames.map(cacheName => {
+                                        if (cacheName !== CACHE_NAME) {
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            })
+                        );
+                    });
+                `;
+                
+                // Blob ဆောက်မယ်
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                // Register လုပ်မယ်
+                navigator.serviceWorker.register(swUrl).then(reg => {
+                    console.log('Service Worker registered with blob URL:', reg);
                 }).catch(err => {
                     console.log('Service Worker registration failed:', err);
                 });
@@ -632,93 +698,6 @@
                 console.error("Image Gen Error:", err);
                 showToast("Download failed", "error");
             }
-        }
-    </script>
-
-    <!-- Embedded manifest.json (for single file) -->
-    <script>
-        // Create manifest.json dynamically for single file deployment
-        const manifestData = {
-            name: "JUE VPN Admin",
-            short_name: "JUE Admin",
-            description: "VPN Admin Panel with PWA support",
-            start_url: ".",
-            display: "standalone",
-            background_color: "#0f172a",
-            theme_color: "#0f172a",
-            icons: [
-                {
-                    src: "https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png",
-                    sizes: "512x512",
-                    type: "image/png",
-                    purpose: "any maskable"
-                }
-            ]
-        };
-        
-        // Create manifest link if not exists
-        if (!document.querySelector('link[rel="manifest"]')) {
-            const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            const link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = manifestURL;
-            document.head.appendChild(link);
-        }
-    </script>
-
-    <!-- Embedded Service Worker (sw.js) -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                const CACHE_NAME = 'jue-vpn-cache-v1';
-                const urlsToCache = [
-                    '.',
-                    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-                    'https://cdn.tailwindcss.com',
-                    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
-                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
-                    'https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png'
-                ];
-
-                self.addEventListener('install', event => {
-                    event.waitUntil(
-                        caches.open(CACHE_NAME)
-                            .then(cache => cache.addAll(urlsToCache))
-                    );
-                });
-
-                self.addEventListener('fetch', event => {
-                    event.respondWith(
-                        caches.match(event.request)
-                            .then(response => response || fetch(event.request))
-                    );
-                });
-
-                self.addEventListener('activate', event => {
-                    event.waitUntil(
-                        caches.keys().then(cacheNames => {
-                            return Promise.all(
-                                cacheNames.map(cacheName => {
-                                    if (cacheName !== CACHE_NAME) {
-                                        return caches.delete(cacheName);
-                                    }
-                                })
-                            );
-                        })
-                    );
-                });
-            `;
-            
-            const swBlob = new Blob([swCode], {type: 'application/javascript'});
-            const swURL = URL.createObjectURL(swBlob);
-            
-            navigator.serviceWorker.register(swURL).then(reg => {
-                console.log('Service Worker registered with blob URL');
-            }).catch(err => {
-                console.log('Service Worker registration failed:', err);
-            });
         }
     </script>
 </body>
