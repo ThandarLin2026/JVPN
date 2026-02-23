@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JK VPN PANEL· All-in-One PWA</title>
+    <title>JK VPN PANEL · All-in-One PWA</title>
     
     <!-- PWA Meta Tags (iOS) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -85,6 +85,47 @@
             animation: spin-slow 4s linear infinite;
         }
 
+        /* 🔥 FIRE ANIMATION FOR EACH LETTER OF TITLE */
+        @keyframes fireFlicker {
+            0% { color: #f97316; text-shadow: 0 0 5px #f97316, 0 0 10px #f97316, 0 0 20px #facc15; }
+            25% { color: #facc15; text-shadow: 0 0 8px #facc15, 0 0 15px #f97316, 0 0 25px #f97316; }
+            50% { color: #ef4444; text-shadow: 0 0 10px #ef4444, 0 0 20px #f97316, 0 0 30px #fbbf24; }
+            75% { color: #f97316; text-shadow: 0 0 8px #fbbf24, 0 0 15px #ef4444, 0 0 25px #f97316; }
+            100% { color: #fbbf24; text-shadow: 0 0 5px #fbbf24, 0 0 10px #facc15, 0 0 20px #ef4444; }
+        }
+        .fire-letter {
+            display: inline-block;
+            animation: fireFlicker 1.8s infinite alternate;
+            font-weight: 900;
+            font-style: italic;
+        }
+        /* delay for each letter (optional) */
+        .fire-letter:nth-child(1) { animation-delay: 0s; }
+        .fire-letter:nth-child(2) { animation-delay: 0.1s; }
+        .fire-letter:nth-child(3) { animation-delay: 0.2s; }
+        .fire-letter:nth-child(4) { animation-delay: 0.3s; }
+        .fire-letter:nth-child(5) { animation-delay: 0.4s; }
+        .fire-letter:nth-child(6) { animation-delay: 0.5s; }
+        .fire-letter:nth-child(7) { animation-delay: 0.6s; }
+        .fire-letter:nth-child(8) { animation-delay: 0.7s; }
+        .fire-letter:nth-child(9) { animation-delay: 0.8s; }
+        .fire-letter:nth-child(10) { animation-delay: 0.9s; }
+        .fire-letter:nth-child(11) { animation-delay: 1s; }
+
+        /* 🌈 COLOR CYCLE FOR USER ICONS */
+        @keyframes colorCycle {
+            0% { color: #fbbf24; }      /* yellow */
+            16% { color: #22c55e; }     /* green */
+            32% { color: #ef4444; }     /* red */
+            48% { color: #3b82f6; }     /* blue */
+            64% { color: #a855f7; }     /* purple */
+            80% { color: #ec4899; }     /* pink */
+            100% { color: #fbbf24; }    /* back to yellow */
+        }
+        .icon-color-cycle {
+            animation: colorCycle 6s infinite ease-in-out;
+        }
+
         #screenshotContainer {
             position: fixed; left: -9999px; top: 0;
             width: 500px; background: #0f172a; padding: 40px; border-radius: 0; color: white;
@@ -104,6 +145,13 @@
         .install-pulse {
             animation: bounce-install 2s infinite;
         }
+
+        /* Active filter style for today box */
+        .today-active {
+            background: rgba(251, 191, 36, 0.3);
+            border: 2px solid #fbbf24;
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
@@ -113,7 +161,7 @@
         <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-2xl">
             <div class="text-center mb-8">
                 <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" class="w-20 h-20 mx-auto rounded-2xl shadow-lg mb-4 animate-spin-slow">
-                <h2 class="text-2xl font-bold text-slate-800 dark:text-white italic uppercase">Admin Access</h2>
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white italic uppercase">👤Admin Panel Login</h2>
             </div>
             <div class="space-y-4">
                 <input type="email" id="loginEmail" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-amber-500" placeholder="Username">
@@ -130,7 +178,21 @@
                 <div class="flex items-center gap-4 w-full justify-between">
                     <div class="flex items-center gap-3">
                         <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" class="w-12 h-12 rounded-xl border border-gold/30 animate-spin-slow">
-                        <h1 class="text-xl font-black italic">JK VIP PANEL</h1>
+                        <!-- FIRE ANIMATION TITLE: each letter wrapped in span -->
+                        <h1 class="text-xl font-black italic flex">
+                            <span class="fire-letter">J</span>
+                            <span class="fire-letter">K</span>
+                            <span class="fire-letter">&nbsp;</span>
+                            <span class="fire-letter">V</span>
+                            <span class="fire-letter">I</span>
+                            <span class="fire-letter">P</span>
+                            <span class="fire-letter">&nbsp;</span>
+                            <span class="fire-letter">P</span>
+                            <span class="fire-letter">A</span>
+                            <span class="fire-letter">N</span>
+                            <span class="fire-letter">E</span>
+                            <span class="fire-letter">L</span>
+                        </h1>
                     </div>
                     <div class="flex gap-2">
                         <button id="installBtn" class="hidden w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg install-pulse"><i class="fas fa-download"></i></button>
@@ -140,11 +202,13 @@
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3 w-full">
-                    <div class="bg-white/5 border border-white/10 p-3 rounded-2xl text-center">
+                    <!-- TODAY box: click to show today's created accounts -->
+                    <div id="todayBox" onclick="toggleTodayFilter()" class="bg-white/5 border border-white/10 p-3 rounded-2xl text-center cursor-pointer transition-all hover:bg-white/20">
                         <p class="text-[10px] text-slate-400 font-bold uppercase">Today</p>
                         <p class="text-lg font-black text-amber-400" id="statDailyRev">0 THB</p>
                     </div>
-                    <div class="bg-white/5 border border-white/10 p-3 rounded-2xl text-center">
+                    <!-- TOTAL box: click to clear today filter and show all -->
+                    <div id="totalBox" onclick="clearTodayFilter()" class="bg-white/5 border border-white/10 p-3 rounded-2xl text-center cursor-pointer transition-all hover:bg-white/20">
                         <p class="text-[10px] text-slate-400 font-bold uppercase">Total</p>
                         <p class="text-lg font-black text-emerald-400" id="statTotalRev">0 THB</p>
                     </div>
@@ -195,7 +259,8 @@
                     <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" class="w-16 h-16 rounded-xl border-2 border-amber-500 shadow-lg animate-spin-slow">
                 </div>
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-black">➕ ADD VIP MEMBERR</h3>
+                    <!-- REPLACED emoji plus with Font Awesome icon -->
+                    <h3 class="text-xl font-black"><i class="fas fa-user-plus text-amber-500 mr-2"></i> ADD VIP MEMBER'S</h3>
                     <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="space-y-4">
@@ -306,15 +371,12 @@
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
 
-        // beforeinstallprompt event ကိုဖမ်းမယ်
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             installBtn.classList.remove('hidden');
-            console.log('beforeinstallprompt fired');
         });
 
-        // install button ကိုနှိပ်ရင် prompt တက်မယ်
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
@@ -324,16 +386,13 @@
             installBtn.classList.add('hidden');
         });
 
-        // အောင်မြင်စွာ install လုပ်ပြီးသွားရင်
         window.addEventListener('appinstalled', () => {
             console.log('PWA installed successfully');
             installBtn.classList.add('hidden');
         });
 
-        // Service Worker ကို blob URL နဲ့ register လုပ်မယ် (သီးခြားဖိုင်မလိုဘူး)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Service worker code ကို string အနေနဲ့ရေးမယ်
                 const swCode = `
                     const CACHE_NAME = 'jue-vpn-cache-v1';
                     const urlsToCache = [
@@ -375,11 +434,9 @@
                     });
                 `;
                 
-                // Blob ဆောက်မယ်
                 const blob = new Blob([swCode], { type: 'application/javascript' });
                 const swUrl = URL.createObjectURL(blob);
                 
-                // Register လုပ်မယ်
                 navigator.serviceWorker.register(swUrl).then(reg => {
                     console.log('Service Worker registered with blob URL:', reg);
                 }).catch(err => {
@@ -402,6 +459,7 @@
 
         let allUsers = [];
         let currentFilter = 'all';
+        let todayFilterActive = false; // for today's sales filter
 
         function toggleDarkMode() {
             const html = document.documentElement;
@@ -478,12 +536,38 @@
             renderUsers();
         }
 
+        // Today filter toggle
+        function toggleTodayFilter() {
+            todayFilterActive = !todayFilterActive;
+            const todayBox = document.getElementById('todayBox');
+            if (todayFilterActive) {
+                todayBox.classList.add('today-active');
+            } else {
+                todayBox.classList.remove('today-active');
+            }
+            renderUsers();
+        }
+
+        function clearTodayFilter() {
+            if (todayFilterActive) {
+                todayFilterActive = false;
+                document.getElementById('todayBox').classList.remove('today-active');
+                renderUsers();
+            }
+        }
+
         function renderUsers() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const container = document.getElementById('usersList');
             const now = new Date();
+            const todayStr = new Date().toISOString().split('T')[0];
 
             let filtered = allUsers.filter(u => (u.username || "").toLowerCase().includes(search) || (u.token || u.id).toLowerCase().includes(search));
+
+            // Apply today filter if active
+            if (todayFilterActive) {
+                filtered = filtered.filter(u => u.createdAt === todayStr);
+            }
 
             if(currentFilter === 'active') filtered = filtered.filter(u => u.isActive && new Date(u.expiryDate) > now);
             if(currentFilter === 'inactive') filtered = filtered.filter(u => !u.isActive);
@@ -513,8 +597,9 @@
                 <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-lg border border-slate-100 dark:border-slate-800 w-full">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600">
-                                <i class="fas fa-user-shield text-lg"></i>
+                            <!-- ICON with color cycling animation (removed fixed color) -->
+                            <div class="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-user-shield text-lg icon-color-cycle"></i>
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
