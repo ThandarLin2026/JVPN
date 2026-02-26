@@ -169,9 +169,26 @@
             background: #fbbf24;
             border-radius: 10px;
         }
+
+        /* Ensure full height layout with fixed top sections */
+        #adminPanel {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .fixed-top-area {
+            flex-shrink: 0;
+            background: inherit; /* inherit background to blend */
+        }
+        .scrollable-cards {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 1rem;
+        }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col min-h-screen">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
 
     <!-- Login Section -->
     <div id="loginSection" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900 p-4">
@@ -188,15 +205,16 @@
         </div>
     </div>
 
-    <!-- Main Panel -->
-    <div id="adminPanel" class="hidden flex-1 flex flex-col min-h-0">
-        <header class="premium-gradient text-white px-4 py-6 shadow-2xl flex-shrink-0">
-            <div class="max-w-6xl mx-auto flex flex-col items-center gap-5">
-                <!-- top row with logo, title, server time, buttons -->
-                <div class="flex items-center gap-4 w-full justify-between flex-wrap">
+    <!-- Main Panel with fixed top area and scrollable cards -->
+    <div id="adminPanel" class="hidden">
+        <!-- Fixed top area: header, tabs, search/add -->
+        <div class="fixed-top-area premium-gradient text-white px-4 pt-6 pb-2 shadow-2xl">
+            <div class="max-w-6xl mx-auto flex flex-col gap-4">
+                <!-- Header row with left (logo+title), center (server date/time), right (buttons) -->
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <!-- left: logo + fire title -->
                     <div class="flex items-center gap-3">
                         <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" class="w-12 h-12 rounded-xl border border-gold/30 animate-spin-slow">
-                        <!-- FIRE ANIMATION TITLE: each letter wrapped in span -->
                         <h1 class="text-xl font-black italic flex">
                             <span class="fire-letter">J</span>
                             <span class="fire-letter">K</span>
@@ -212,18 +230,21 @@
                             <span class="fire-letter">L</span>
                         </h1>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <!-- server time display -->
-                        <div id="serverTimeDisplay" class="text-xs bg-white/10 px-3 py-1.5 rounded-full flex items-center gap-1 font-mono font-bold">
-                            <i class="fas fa-clock text-amber-400"></i>
-                            <span id="serverTimeText">--:--:--</span>
-                        </div>
+
+                    <!-- center: server time with date (centered) -->
+                    <div id="serverTimeDisplay" class="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2 font-mono font-bold text-sm">
+                        <i class="fas fa-clock text-amber-400"></i>
+                        <span id="serverTimeText">----/--/-- --:--:--</span>
+                    </div>
+
+                    <!-- right: action buttons -->
+                    <div class="flex gap-2">
                         <button id="installBtn" class="hidden w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg install-pulse"><i class="fas fa-download"></i></button>
                         <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20"><i id="themeIcon" class="fas fa-moon text-gold"></i></button>
                         <button onclick="logout()" class="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-lg"><i class="fas fa-sign-out-alt"></i></button>
                     </div>
                 </div>
-                
+
                 <!-- today / total boxes -->
                 <div class="grid grid-cols-2 gap-3 w-full">
                     <div id="todayBox" onclick="toggleTodayFilter()" class="bg-white/5 border border-white/10 p-3 rounded-2xl text-center cursor-pointer transition-all hover:bg-white/20">
@@ -236,10 +257,10 @@
                     </div>
                 </div>
             </div>
-        </header>
+        </div>
 
-        <!-- Navigation Tabs (sticky) -->
-        <div class="sticky top-0 z-50 bg-white dark:bg-slate-900 shadow-md flex-shrink-0">
+        <!-- Navigation Tabs (fixed below header) -->
+        <div class="bg-white dark:bg-slate-900 shadow-md flex-shrink-0">
             <div class="max-w-6xl mx-auto flex overflow-x-auto no-scrollbar border-b border-slate-100 dark:border-slate-800">
                 <button onclick="setFilter('all')" id="tab-all" class="flex-1 py-4 px-4 font-bold text-[11px] uppercase tracking-wider text-blue-500 dark:text-blue-400 whitespace-nowrap flex flex-col items-center gap-1 transition-all">
                     <i class="fas fa-users mb-1"></i> All <span id="count-all">0</span>
@@ -256,28 +277,29 @@
             </div>
         </div>
 
-        <!-- Main content: search/add fixed, user list scrollable -->
-        <main class="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950">
-            <div class="max-w-6xl mx-auto w-full px-4 mt-5 flex flex-col min-h-0">
-                <!-- fixed top part inside main -->
-                <div class="flex flex-col gap-4 mb-5 flex-shrink-0">
-                    <div class="relative w-full">
-                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" id="searchInput" placeholder="Search name or ID..." class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white dark:bg-slate-800 shadow-lg border-0 outline-none">
-                    </div>
-                    <button onclick="openModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 py-4 rounded-2xl font-black shadow-lg shadow-amber-200/50 transition-all flex items-center justify-center gap-2">
-                        <i class="fas fa-plus-circle"></i> ADD NEW VIP
-                    </button>
+        <!-- Fixed search and ADD NEW VIP section (always visible) -->
+        <div class="bg-slate-50 dark:bg-slate-950 pt-3 px-4 flex-shrink-0">
+            <div class="max-w-6xl mx-auto flex flex-col gap-4 mb-3">
+                <div class="relative w-full">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Search name or ID..." class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white dark:bg-slate-800 shadow-lg border-0 outline-none">
                 </div>
+                <button onclick="openModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 py-4 rounded-2xl font-black shadow-lg shadow-amber-200/50 transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-plus-circle"></i> ADD NEW VIP
+                </button>
+            </div>
+        </div>
 
-                <!-- scrollable user cards grid -->
-                <div id="usersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6 overflow-y-auto flex-1 scrollable-users pr-1">
+        <!-- Scrollable user cards -->
+        <div class="scrollable-cards px-4">
+            <div class="max-w-6xl mx-auto">
+                <div id="usersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- cards injected -->
                 </div>
             </div>
-        </main>
+        </div>
 
-        <!-- Footer with copyright -->
+        <!-- Footer with copyright (fixed at bottom) -->
         <footer class="flex-shrink-0 text-center py-3 text-slate-500 dark:text-slate-400 text-xs border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50">
             <i class="fas fa-copyright mr-1 text-amber-500"></i> JK VIP MEMBER GENERATOR
         </footer>
@@ -489,11 +511,17 @@
         let currentFilter = 'all';
         let todayFilterActive = false;
 
-        // ========== Server Time Update ==========
+        // ========== Server Time Update with Date ==========
         function updateServerTime() {
             const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-GB', { hour12: false }); // HH:MM:SS
-            document.getElementById('serverTimeText').innerText = timeStr;
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const dateTimeStr = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+            document.getElementById('serverTimeText').innerText = dateTimeStr;
         }
         setInterval(updateServerTime, 1000);
         updateServerTime();
