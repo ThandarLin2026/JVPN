@@ -831,7 +831,8 @@
             const startDate = u.createdAt || new Date().toISOString().split('T')[0];
             document.getElementById('ssStartDate').innerText = startDate;
             document.getElementById('ssExpiry').innerText = u.expiryDate || "N/A";
-            document.getElementById('ssPrice').innerText = `${(u.price || 0).toLocaleString()} `;
+            // ***** MODIFIED: Added Thai Baht symbol () after the price *****
+            document.getElementById('ssPrice').innerText = `${(u.price || 0).toLocaleString()} `;
 
             const now = new Date();
             const expiry = new Date(u.expiryDate);
