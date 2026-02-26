@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JK VPN PANEL · All-in-One PWA</title>
+    
+    <!-- PWA Meta Tags (iOS) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JK VIP ADMIN">
+    <meta name="theme-color" content="#0f172a">
+    
+    <!-- Web App Manifest (inline data URI) -->
+    <link rel="manifest" href="data:application/manifest+json,{
+        %22name%22:%22JUE%20VPN%20Admin%22,
+        %22short_name%22:%22JUE%20Admin%22,
+        %22description%22:%22VPN%20Admin%22,
+        %22start_url%22:%22.%22,
+        %22display%22:%22standalone%22,
+        %22background_color%22:%22%230f172a%22,
+        %22theme_color%22:%22%230f172a%22,
+        %22icons%22:[{
+            %22src%22:%22https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png%22,
+            %22sizes%22:%22512x512%22,
+            %22type%22:%22image/png%22,
+            %22purpose%22:%22any%20maskable%22
+        }]
+    }">
+    
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png">
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png">
+    
+    <!-- Scripts & Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { premium: '#0f172a', gold: '#fbbf24' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; -webkit-tap-highlight-color: transparent; }
+        .premium-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        
+        /* LED Status */
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
+
+        .led-green { width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; animation: pulse-green 2s infinite; }
+        .led-red { width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%; animation: pulse-red 2s infinite; }
+        .led-yellow { width: 10px; height: 10px; background-color: #eab308; border-radius: 50%; animation: pulse-yellow 2s infinite; }
+
+        /* Tab animations and colors */
+        @keyframes tabPulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .tab-active-all { color: #3b82f6 !important; border-bottom: 3px solid #3b82f6; animation: tabPulse 1.8s infinite; }
+        .tab-active-active { color: #22c55e !important; border-bottom: 3px solid #22c55e; animation: tabPulse 1.8s infinite; }
+        .tab-active-inactive { color: #eab308 !important; border-bottom: 3px solid #eab308; animation: tabPulse 1.8s infinite; }
+        .tab-active-offline { color: #ef4444 !important; border-bottom: 3px solid #ef4444; animation: tabPulse 1.8s infinite; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* Spinning animation for logos */
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 4s linear infinite;
+        }
+
+        /*  FIRE ANIMATION FOR EACH LETTER OF TITLE */
+        @keyframes fireFlicker {
+            0% { color: #f97316; text-shadow: 0 0 5px #f97316, 0 0 10px #f97316, 0 0 20px #facc15; }
+            25% { color: #facc15; text-shadow: 0 0 8px #facc15, 0 0 15px #f97316, 0 0 25px #f97316; }
+            50% { color: #ef4444; text-shadow: 0 0 10px #ef4444, 0 0 20px #f97316, 0 0 30px #fbbf24; }
+            75% { color: #f97316; text-shadow: 0 0 8px #fbbf24, 0 0 15px #ef4444, 0 0 25px #f97316; }
+            100% { color: #fbbf24; text-shadow: 0 0 5px #fbbf24, 0 0 10px #facc15, 0 0 20px #ef4444; }
+        }
+        .fire-letter {
+            display: inline-block;
+            animation: fireFlicker 1.8s infinite alternate;
+            font-weight: 900;
+            font-style: italic;
+        }
+        /* delay for each letter (optional) */
+        .fire-letter:nth-child(1) { animation-delay: 0s; }
+        .fire-letter:nth-child(2) { animation-delay: 0.1s; }
+        .fire-letter:nth-child(3) { animation-delay: 0.2s; }
+        .fire-letter:nth-child(4) { animation-delay: 0.3s; }
+        .fire-letter:nth-child(5) { animation-delay: 0.4s; }
+        .fire-letter:nth-child(6) { animation-delay: 0.5s; }
+        .fire-letter:nth-child(7) { animation-delay: 0.6s; }
+        .fire-letter:nth-child(8) { animation-delay: 0.7s; }
+        .fire-letter:nth-child(9) { animation-delay: 0.8s; }
+        .fire-letter:nth-child(10) { animation-delay: 0.9s; }
+        .fire-letter:nth-child(11) { animation-delay: 1s; }
+
+        /*  COLOR CYCLE FOR USER ICONS */
+        @keyframes colorCycle {
+            0% { color: #fbbf24; }      /* yellow */
+            16% { color: #22c55e; }     /* green */
+            32% { color: #ef4444; }     /* red */
+            48% { color: #3b82f6; }     /* blue */
+            64% { color: #a855f7; }     /* purple */
+            80% { color: #ec4899; }     /* pink */
+            100% { color: #fbbf24; }    /* back to yellow */
+        }
+        .icon-color-cycle {
+            animation: colorCycle 6s infinite ease-in-out;
+        }
+
+        #screenshotContainer {
+            position: fixed; left: -9999px; top: 0;
+            width: 500px; background: #0f172a; padding: 40px; border-radius: 0; color: white;
+            z-index: -1;
+            font-family: 'Inter', sans-serif;
+        }
+        #screenshotContainer i {
+            font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Free', sans-serif;
+            font-weight: 900;
+        }
+
+        /* Install button animation */
+        @keyframes bounce-install {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .install-pulse {
+            animation: bounce-install 2s infinite;
+        }
+
+        /* Active filter style for today box */
+        .today-active {
+            background: rgba(251, 191, 36, 0.3);
+            border: 2px solid #fbbf24;
+            transform: scale(0.98);
+        }
+
+        /* custom scroll for user list */
+        .scrollable-users {
+            scrollbar-width: thin;
+            scrollbar-color: #fbbf24 #1e293b;
+        }
+        .scrollable-users::-webkit-scrollbar {
+            width: 5px;
+        }
+        .scrollable-users::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        .scrollable-users::-webkit-scrollbar-thumb {
+            background: #fbbf24;
+            border-radius: 10px;
+        }
+
+        /* Ensure full height layout with fixed top sections */
+        #adminPanel {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .fixed-top-area {
+            flex-shrink: 0;
+            background: inherit;
+        }
+        .scrollable-cards {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+
+    <!-- Login Section -->
+    <div id="loginSection" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900 p-4">
+        <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-2xl">
+            <div class="text-center mb-8">
+                <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" class="w-20 h-20 mx-auto rounded-2xl shadow-lg mb-4 animate-spin-slow">
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white italic uppercase">Admin Panel Login</h2>
+            </div>
+            <div class="space-y-4">
+                <input type="email" id="loginEmail" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-amber-500" placeholder="Username">
+                <input type="password" id="loginPass" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-amber-500" placeholder="Password">
+                <button onclick="handleLogin()" class="w-full bg-slate-900 dark:bg-amber-500 dark:text-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Panel with fixed top area and scrollable cards -->
+    <div id="adminPanel" class="hidden">
+        <!-- Fixed top area: header, tabs, search/add -->
+        <div class="fixed-top-area premium-gradient text-white px-4 pt-6 pb-2 shadow-2xl">
+            <div class="max-w-6xl mx-auto flex flex-col gap-4">
+                <!-- Header row with left (logo+title), center (server date/time), right (buttons) -->
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <!-- left: logo + fire title -->
+                    <div class="flex items-center gap-3">
+                        <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" class="w-12 h-12 rounded-xl border border-gold/30 animate-spin-slow">
+                        <h1 class="text-xl font-black italic flex">
+                            <span class="fire-letter">J</span>
+                            <span class="fire-letter">K</span>
+                            <span class="fire-letter">&nbsp;</span>
+                            <span class="fire-letter">V</span>
+                            <span class="fire-letter">I</span>
+                            <span class="fire-letter">P</span>
+                            <span class="fire-letter">&nbsp;</span>
+                            <span class="fire-letter">P</span>
+                            <span class="fire-letter">A</span>
+                            <span class="fire-letter">N</span>
+                            <span class="fire-letter">E</span>
+                            <span class="fire-letter">L</span>
+                        </h1>
+                    </div>
+
+                    <!-- center: server time with date (centered) -->
+                    <div id="serverTimeDisplay" class="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2 font-mono font-bold text-sm">
+                        <i class="fas fa-clock text-amber-400"></i>
+                        <span id="serverTimeText">----/--/-- --:--:--</span>
+                    </div>
+
+                    <!-- right: action buttons -->
+                    <div class="flex gap-2">
+                        <button id="installBtn" class="hidden w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg install-pulse"><i class="fas fa-download"></i></button>
+                        <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20"><i id="themeIcon" class="fas fa-moon text-gold"></i></button>
+                        <button onclick="logout()" class="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-lg"><i class="fas fa-sign-out-alt"></i></button>
+                    </div>
+                </div>
+
+                <!-- today / total boxes -->
+                <div class="grid grid-cols-2 gap-3 w-full">
+                    <div id="todayBox" onclick="toggleTodayFilter()" class="bg-white/5 border border-white/10 p-3 rounded-2xl text-center cursor-pointer transition-all hover:bg-white/20">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">Today</p>
+                        <p class="text-lg font-black text-amber-400" id="statDailyRev">0 THB</p>
+                    </div>
+                    <div id="totalBox" onclick="clearTodayFilter()" class="bg-white/5 border border-white/10 p-3 rounded-2xl text-center cursor-pointer transition-all hover:bg-white/20">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">Total</p>
+                        <p class="text-lg font-black text-emerald-400" id="statTotalRev">0 THB</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs (fixed below header) -->
+        <div class="bg-white dark:bg-slate-900 shadow-md flex-shrink-0">
+            <div class="max-w-6xl mx-auto flex overflow-x-auto no-scrollbar border-b border-slate-100 dark:border-slate-800">
+                <button onclick="setFilter('all')" id="tab-all" class="flex-1 py-4 px-4 font-bold text-[11px] uppercase tracking-wider text-blue-500 dark:text-blue-400 whitespace-nowrap flex flex-col items-center gap-1 transition-all">
+                    <i class="fas fa-users mb-1"></i> All <span id="count-all">0</span>
+                </button>
+                <button onclick="setFilter('active')" id="tab-active" class="flex-1 py-4 px-4 font-bold text-[11px] uppercase tracking-wider text-green-500 dark:text-green-400 whitespace-nowrap flex flex-col items-center gap-1 transition-all">
+                    <i class="fas fa-check-circle mb-1"></i> Active <span id="count-active">0</span>
+                </button>
+                <button onclick="setFilter('inactive')" id="tab-inactive" class="flex-1 py-4 px-4 font-bold text-[11px] uppercase tracking-wider text-amber-500 dark:text-amber-400 whitespace-nowrap flex flex-col items-center gap-1 transition-all">
+                    <i class="fas fa-user-slash mb-1"></i> Inactive <span id="count-inactive">0</span>
+                </button>
+                <button onclick="setFilter('offline')" id="tab-offline" class="flex-1 py-4 px-4 font-bold text-[11px] uppercase tracking-wider text-red-500 dark:text-red-400 whitespace-nowrap flex flex-col items-center gap-1 transition-all">
+                    <i class="fas fa-clock mb-1"></i> Offline <span id="count-offline">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Fixed search and ADD NEW VIP section (always visible) -->
+        <div class="bg-slate-50 dark:bg-slate-950 pt-3 px-4 flex-shrink-0">
+            <div class="max-w-6xl mx-auto flex flex-col gap-4 mb-3">
+                <div class="relative w-full">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Search name or ID..." class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white dark:bg-slate-800 shadow-lg border-0 outline-none">
+                </div>
+                <button onclick="openModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 py-4 rounded-2xl font-black shadow-lg shadow-amber-200/50 transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-plus-circle"></i> ADD NEW VIP
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable user cards -->
+        <div class="scrollable-cards px-4">
+            <div class="max-w-6xl mx-auto">
+                <div id="usersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- cards injected -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer with copyright (fixed at bottom) -->
+        <footer class="flex-shrink-0 text-center py-3 text-slate-500 dark:text-slate-400 text-xs border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50">
+            <i class="fas fa-copyright mr-1 text-amber-500"></i> JK VIP MEMBER GENERATOR
+        </footer>
+    </div>
+
+    <!-- Modal for Create/Edit -->
+    <div id="userModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl">
+            <div class="p-6">
+                <div class="flex justify-center mb-4">
+                    <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" class="w-16 h-16 rounded-xl border-2 border-amber-500 shadow-lg animate-spin-slow">
+                </div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-black"><i class="fas fa-user-plus text-amber-500 mr-2"></i> ADD VIP MEMBER'S</h3>
+                    <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <input type="hidden" id="editId">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1"><i class="fas fa-user mr-1"></i>User Name</label>
+                            <input type="text" id="uName" class="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1"><i class="fas fa-microchip mr-1"></i>Device ID</label>
+                            <input type="text" id="uToken" class="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1"><i class="fas fa-coins mr-1"></i>Price</label>
+                            <input type="number" id="uPrice" class="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1"><i class="fas fa-calendar-alt mr-1"></i>Expiry</label>
+                            <input type="date" id="uExpiry" class="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                        <input type="checkbox" id="uStatus" checked class="w-5 h-5 accent-amber-500">
+                        <label for="uStatus" class="font-bold text-sm"><i class="fas fa-check-circle mr-1 text-amber-600"></i>Account Active</label>
+                    </div>
+                    <button id="saveBtn" onclick="saveUser()" class="w-full bg-slate-900 dark:bg-amber-500 dark:text-slate-900 text-white font-black py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2">
+                        <span id="btnText"><i class="fas fa-download mr-1"></i> SAVE & DOWNLOAD</span>
+                        <div id="btnLoader" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Template (updated with three logos below PREMIUM VIP) -->
+    <div id="screenshotContainer">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png" style="width: 100px; height: 100px; border-radius: 24px; border: 4px solid #fbbf24; margin-bottom: 20px; margin-left: auto; margin-right: auto;">
+            <div style="background: transparent; color: #3b82f6; display: inline-flex; align-items: center; justify-content: center; padding: 8px 32px; border-radius: 50px; font-weight: 900; font-size: 18px; margin-bottom: 20px; letter-spacing: 2px;">PREMIUM VIP</div>
+            
+            <!-- NEW: three 45x45 logos -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;">
+                <img src="https://raw.githubusercontent.com/ThandarLin2026/JVPN/main/d.png" width="45" height="45" style="width:45px; height:45px; border-radius:8px;">
+                <img src="https://raw.githubusercontent.com/ThandarLin2026/JVPN/main/t.png" width="45" height="45" style="width:45px; height:45px; border-radius:8px;">
+                <img src="https://raw.githubusercontent.com/ThandarLin2026/JVPN/main/a.png" width="45" height="45" style="width:45px; height:45px; border-radius:8px;">
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 5px;">
+                <i class="fas fa-check-circle" style="color: #10b981; font-size: 32px;"></i>
+                <span style="display: inline-flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #10b981; letter-spacing: 1px; background: transparent; padding: 6px 18px; border-radius: 60px;">CREATE VIP SUCCESSFULLY</span>
+            </div>
+        </div>
+
+        <div style="background: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); padding: 35px; border-radius: 35px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                <p style="margin: 0; opacity: 0.8; font-size: 14px; font-weight: 700; text-transform: uppercase; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-user-circle" style="font-size: 16px;"></i> USERNAME
+                </p>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 26px; font-weight: 800; color: white; word-break: break-word;" id="ssName"></span>
+                    <span style="background: transparent; color: #fbbf24; display: inline-flex; align-items: center; justify-content: center; padding: 6px 16px; border-radius: 8px; font-weight: 900; font-size: 18px; letter-spacing: 1px;">PRO</span>
+                </div>
+            </div>
+            <div style="margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                <p style="margin: 0; opacity: 0.8; font-size: 14px; font-weight: 700; text-transform: uppercase; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-microchip" style="font-size: 16px;"></i> DEVICE ID
+                </p>
+                <p style="margin: 8px 0 0 0; font-size: 22px; font-weight: 600; color: white; font-family: monospace; word-break: break-word;" id="ssToken"></p>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+                <div style="flex: 1;">
+                    <p style="margin: 0; opacity: 0.8; font-size: 14px; font-weight: 700; text-transform: uppercase; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-calendar-plus" style="font-size: 14px;"></i> START DATE
+                    </p>
+                    <p style="margin: 8px 0 0 0; font-size: 18px; font-weight: 700; color: white;" id="ssStartDate"></p>
+                </div>
+                <div style="flex: 1; text-align: right;">
+                    <p style="margin: 0; opacity: 0.8; font-size: 14px; font-weight: 700; text-transform: uppercase; color: #fbbf24; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                        <i class="fas fa-calendar-check" style="font-size: 14px;"></i> EXPIRY DATE
+                    </p>
+                    <p style="margin: 8px 0 0 0; font-size: 18px; font-weight: 700; color: white;" id="ssExpiry"></p>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-hourglass-half" style="color: #fbbf24; font-size: 18px;"></i>
+                    <span style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #fbbf24;">DAYS LEFT</span>
+                </div>
+                <span style="font-size: 24px; font-weight: 800; color: #fbbf24;" id="ssDaysLeft">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-coins" style="color: #fbbf24; font-size: 20px;"></i>
+                    <span style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: #fbbf24;">PRICE</span>
+                </div>
+                <span style="font-size: 28px; font-weight: 900; color: #10b981;" id="ssPrice"></span>
+            </div>
+        </div>
+        <div style="margin-top: 35px; text-align: center; opacity: 0.9; font-size: 16px; font-weight: 600; color: #fbbf24; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <i class="fas fa-hand-holding-heart" style="color: #fbbf24; font-size: 20px;"></i> 
+            
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 bg-slate-900 text-white rounded-2xl shadow-2xl translate-y-20 opacity-0 transition-all font-bold pointer-events-none text-sm"></div>
+
+    <script>
+        // ========== PWA Setup ==========
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+            deferredPrompt = null;
+            installBtn.classList.add('hidden');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA installed successfully');
+            installBtn.classList.add('hidden');
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'jue-vpn-cache-v1';
+                    const urlsToCache = [
+                        '.',
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                        'https://cdn.tailwindcss.com',
+                        'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+                        'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+                        'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
+                        'https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png'
+                    ];
+
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => cache.addAll(urlsToCache))
+                        );
+                    });
+
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(response => response || fetch(event.request))
+                        );
+                    });
+
+                    self.addEventListener('activate', event => {
+                        event.waitUntil(
+                            caches.keys().then(cacheNames => {
+                                return Promise.all(
+                                    cacheNames.map(cacheName => {
+                                        if (cacheName !== CACHE_NAME) {
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            })
+                        );
+                    });
+                `;
+                
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl).then(reg => {
+                    console.log('Service Worker registered with blob URL:', reg);
+                }).catch(err => {
+                    console.log('Service Worker registration failed:', err);
+                });
+            });
+        }
+
+        // ========== Firebase ==========
+        const firebaseConfig = {
+            apiKey: "AIzaSyCeHjHJrNEtOjeC8haVcAxVQCQqL22GbS0",
+            authDomain: "jkvip-58a69.firebaseapp.com",
+            projectId: "jkvip-58a69",
+            storageBucket: "jkvip-58a69.appspot.com",
+            messagingSenderId: "675812875324",
+            appId: "1:675812875324:android:2eda82c5819fdba9f37739"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let allUsers = [];
+        let currentFilter = 'all';
+        let todayFilterActive = false;
+
+        // ========== Server Time Update with Date ==========
+        function updateServerTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const dateTimeStr = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+            document.getElementById('serverTimeText').innerText = dateTimeStr;
+        }
+        setInterval(updateServerTime, 1000);
+        updateServerTime();
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.toggle('dark')) {
+                icon.className = 'fas fa-sun text-gold';
+                localStorage.theme = 'dark';
+            } else {
+                icon.className = 'fas fa-moon text-gold';
+                localStorage.theme = 'light';
+            }
+        }
+
+        if (localStorage.theme === 'dark') document.documentElement.classList.add('dark');
+
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            if(email === "juevpn@gmail.com" && pass === "171991") {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminPanel').classList.remove('hidden');
+                initApp();
+                setFilter('all');
+            } else {
+                showToast("Login Failed!", "error");
+            }
+        }
+
+        function logout() { location.reload(); }
+
+        function initApp() {
+            db.collection("users").onSnapshot(snapshot => {
+                allUsers = [];
+                let total = 0, todayRev = 0;
+                const todayStr = new Date().toISOString().split('T')[0];
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    allUsers.push({ id: doc.id, ...data });
+                    total += parseFloat(data.price || 0);
+                    if(data.createdAt === todayStr) todayRev += parseFloat(data.price || 0);
+                });
+
+                document.getElementById('statTotalRev').innerText = `${total.toLocaleString()} THB`;
+                document.getElementById('statDailyRev').innerText = `${todayRev.toLocaleString()} THB`;
+                updateCounts();
+                renderUsers();
+            }, (error) => {
+                console.error("Firebase Snapshot Error:", error);
+            });
+            document.getElementById('searchInput').oninput = renderUsers;
+        }
+
+        function updateCounts() {
+            const now = new Date();
+            const counts = {
+                all: allUsers.length,
+                active: allUsers.filter(u => u.isActive && new Date(u.expiryDate) > now).length,
+                inactive: allUsers.filter(u => !u.isActive).length,
+                offline: allUsers.filter(u => u.isActive && new Date(u.expiryDate) <= now).length
+            };
+            Object.keys(counts).forEach(k => document.getElementById(`count-${k}`).innerText = counts[k]);
+        }
+
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('[id^="tab-"]').forEach(b => {
+                b.classList.remove('tab-active-all', 'tab-active-active', 'tab-active-inactive', 'tab-active-offline');
+            });
+            const activeTab = document.getElementById(`tab-${f}`);
+            if (activeTab) {
+                activeTab.classList.add(`tab-active-${f}`);
+            }
+            renderUsers();
+        }
+
+        function toggleTodayFilter() {
+            todayFilterActive = !todayFilterActive;
+            const todayBox = document.getElementById('todayBox');
+            if (todayFilterActive) {
+                todayBox.classList.add('today-active');
+            } else {
+                todayBox.classList.remove('today-active');
+            }
+            renderUsers();
+        }
+
+        function clearTodayFilter() {
+            if (todayFilterActive) {
+                todayFilterActive = false;
+                document.getElementById('todayBox').classList.remove('today-active');
+                renderUsers();
+            }
+        }
+
+        function renderUsers() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('usersList');
+            const now = new Date();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let filtered = allUsers.filter(u => (u.username || "").toLowerCase().includes(search) || (u.token || u.id).toLowerCase().includes(search));
+
+            if (todayFilterActive) {
+                filtered = filtered.filter(u => u.createdAt === todayStr);
+            }
+
+            if(currentFilter === 'active') filtered = filtered.filter(u => u.isActive && new Date(u.expiryDate) > now);
+            if(currentFilter === 'inactive') filtered = filtered.filter(u => !u.isActive);
+            if(currentFilter === 'offline') filtered = filtered.filter(u => u.isActive && new Date(u.expiryDate) <= now);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-10 text-center text-slate-400 font-bold uppercase">No users found</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(u => {
+                const expiry = new Date(u.expiryDate);
+                const diffTime = expiry - now;
+                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const isExpired = daysLeft <= 0;
+                
+                let colorClass = "text-emerald-500", progressClass = "bg-emerald-500", ledClass = "led-green";
+                if(!u.isActive || isExpired || daysLeft <= 3) { 
+                    ledClass = "led-red"; colorClass = "text-red-500"; progressClass = "bg-red-500"; 
+                } else if(daysLeft <= 10) { 
+                    ledClass = "led-yellow"; colorClass = "text-amber-500"; progressClass = "bg-amber-500"; 
+                }
+
+                const percent = Math.min(100, Math.max(0, (daysLeft / 30) * 100));
+
+                return `
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-lg border border-slate-100 dark:border-slate-800 w-full">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-user-shield text-lg icon-color-cycle"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                    <i class="fas fa-crown text-[10px] text-amber-500"></i> ${u.username}
+                                    <span class="text-[8px] bg-amber-400 text-black px-1.5 py-0.5 rounded font-black italic">PRO</span>
+                                </h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <div class="${ledClass}"></div>
+                                    <span class="text-[9px] font-black uppercase tracking-tighter text-slate-400">
+                                        ${!u.isActive ? 'INACTIVE' : (isExpired ? 'OFFLINE' : 'ACTIVE')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editUser('${u.id}')" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-amber-500"><i class="fas fa-pen text-xs"></i></button>
+                            <button onclick="deleteUser('${u.id}')" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-[11px] font-bold">
+                            <span class="text-slate-400 uppercase"><i class="fas fa-id-badge mr-1"></i> Device ID</span>
+                            <span class="text-amber-600 font-mono">${u.token || u.id}</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] font-bold">
+                            <span class="text-slate-400 uppercase"><i class="fas fa-calendar-alt mr-1"></i> Expiry</span>
+                            <span class="text-slate-600 dark:text-slate-300">${u.expiryDate}</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] font-bold">
+                            <span class="text-slate-400 uppercase"><i class="fas fa-coins mr-1"></i> Price</span>
+                            <span class="text-emerald-600">${(u.price || 0).toLocaleString()} THB</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
+                        <div class="flex justify-between items-end mb-1.5">
+                            <span class="text-[10px] font-black uppercase ${colorClass}">DAY LEFTS</span>
+                            <span class="text-sm font-black ${colorClass}">${Math.max(0, daysLeft)} <small class="text-[9px] uppercase">Days</small></span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                            <div class="h-full ${progressClass} transition-all duration-500" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                    <button onclick="downloadSpecificCard('${u.id}')" class="w-full mt-4 py-2 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold uppercase rounded-xl hover:bg-amber-500 hover:text-white transition-all">
+                        <i class="fas fa-download mr-1"></i> Download Card
+                    </button>
+                </div>`;
+            }).join('');
+        }
+
+        async function saveUser() {
+            const id = document.getElementById('editId').value;
+            const uName = document.getElementById('uName').value;
+            const uToken = document.getElementById('uToken').value;
+            const uPrice = parseFloat(document.getElementById('uPrice').value) || 0;
+            const uExpiry = document.getElementById('uExpiry').value;
+            const uStatus = document.getElementById('uStatus').checked;
+
+            if(!uName || !uToken) return showToast("Required Info Missing", "error");
+
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            document.getElementById('btnText').classList.add('opacity-0');
+            document.getElementById('btnLoader').classList.remove('hidden');
+
+            try {
+                const todayStr = new Date().toISOString().split('T')[0];
+                let existingUser = allUsers.find(u => u.id === (id || uToken));
+                
+                const obj = {
+                    username: uName,
+                    token: uToken,
+                    price: uPrice,
+                    expiryDate: uExpiry,
+                    isActive: uStatus,
+                    createdAt: existingUser?.createdAt || todayStr
+                };
+
+                if(id) {
+                    await db.collection("users").doc(id).update(obj);
+                } else {
+                    await db.collection("users").doc(uToken).set(obj);
+                }
+                
+                await generateImage(obj);
+                showToast("Saved & Downloaded!");
+                closeModal();
+            } catch(e) { 
+                console.error("Save Error:", e);
+                showToast("Save Error!", "error"); 
+            } finally {
+                btn.disabled = false;
+                document.getElementById('btnText').classList.remove('opacity-0');
+                document.getElementById('btnLoader').classList.add('hidden');
+            }
+        }
+
+        function editUser(id) {
+            const u = allUsers.find(x => x.id === id);
+            if (!u) return;
+            document.getElementById('editId').value = u.id;
+            document.getElementById('uName').value = u.username;
+            document.getElementById('uToken').value = u.token || u.id;
+            document.getElementById('uPrice').value = u.price;
+            document.getElementById('uExpiry').value = u.expiryDate;
+            document.getElementById('uStatus').checked = u.isActive;
+            openModal();
+        }
+
+        async function deleteUser(id) {
+            if (!id) {
+                showToast("Invalid user ID", "error");
+                return;
+            }
+            
+            const userToDelete = allUsers.find(u => u.id === id);
+            const userName = userToDelete ? userToDelete.username : 'this VIP';
+            
+            if (!confirm(`Are you sure you want to permanently delete "${userName}"?`)) {
+                return;
+            }
+            
+            try {
+                showToast("Deleting...", "info");
+                await db.collection("users").doc(id).delete();
+                showToast("User deleted successfully!", "success");
+            } catch (e) {
+                console.error("Delete error:", e);
+                showToast("Failed to delete. Check console.", "error");
+            }
+        }
+
+        function downloadSpecificCard(id) {
+            const u = allUsers.find(x => x.id === id);
+            if (u) generateImage(u);
+        }
+
+        function openModal() { document.getElementById('userModal').classList.remove('hidden'); }
+        function closeModal() { 
+            document.getElementById('userModal').classList.add('hidden'); 
+            document.getElementById('editId').value = "";
+            document.getElementById('uName').value = "";
+            document.getElementById('uToken').value = "";
+            document.getElementById('uPrice').value = "";
+            document.getElementById('uExpiry').value = "";
+        }
+
+        function showToast(m, t = "success") {
+            const toast = document.getElementById('toast');
+            toast.innerText = m;
+            toast.style.background = t === "success" ? "#0f172a" : (t === "error" ? "#ef4444" : "#3b82f6");
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        async function generateImage(u) {
+            document.getElementById('ssName').innerText = u.username;
+            document.getElementById('ssToken').innerText = u.token || u.id;
+            const startDate = u.createdAt || new Date().toISOString().split('T')[0];
+            document.getElementById('ssStartDate').innerText = startDate;
+            document.getElementById('ssExpiry').innerText = u.expiryDate || "N/A";
+            document.getElementById('ssPrice').innerText = `${(u.price || 0).toLocaleString()} `;
+
+            const now = new Date();
+            const expiry = new Date(u.expiryDate);
+            const diffTime = expiry - now;
+            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            document.getElementById('ssDaysLeft').innerText = daysLeft > 0 ? daysLeft : 0;
+
+            const container = document.getElementById('screenshotContainer');
+            await new Promise(r => setTimeout(r, 800));
+
+            try {
+                const canvas = await html2canvas(container, {
+                    useCORS: true,
+                    scale: 2,
+                    backgroundColor: '#0f172a',
+                });
+                
+                const link = document.createElement('a');
+                link.download = `JUE_VIP_${u.username}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            } catch (err) {
+                console.error("Image Gen Error:", err);
+                showToast("Download failed", "error");
+            }
+        }
+    </script>
+</body>
+</html>
