@@ -11,8 +11,8 @@
     <meta name="apple-mobile-web-app-title" content="JK VIP ADMIN">
     <meta name="theme-color" content="#0f172a">
     
-    <!-- Web App Manifest (fixed: using blob URL for better compatibility) -->
-    <link rel="manifest" href="#" id="manifest-placeholder">
+    <!-- Web App Manifest (fixed data URI, proper base64) -->
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkpVRSBWUE4gQWRtaW4iLAogICJzaG9ydF9uYW1lIjogIkpVRSBBZG1pbiIsCiAgImRlc2NyaXB0aW9uIjogIlZQTiBBZG1pbiIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGYxNzJhIiwKICAidGhlbWVfY29sb3IiOiAiIzBmMTcyYSIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9KVlBOU0hPUC9KS1ZJUFVEUC9tYWluL2FkbWluLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfQogIF0KfQ==">
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png">
@@ -416,85 +416,68 @@
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 bg-slate-900 text-white rounded-2xl shadow-2xl translate-y-20 opacity-0 transition-all font-bold pointer-events-none text-sm"></div>
 
     <script>
-        // ========== FIXED PWA SETUP (manifest + service worker) ==========
-        (function() {
-            // 1. Create manifest blob and set link
-            const manifestData = {
-                name: "JUE VPN Admin",
-                short_name: "JUE Admin",
-                description: "VPN Admin",
-                start_url: ".",
-                display: "standalone",
-                background_color: "#0f172a",
-                theme_color: "#0f172a",
-                icons: [{
-                    src: "https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png",
-                    sizes: "512x512",
-                    type: "image/png",
-                    purpose: "any maskable"
-                }]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' });
-            const manifestUrl = URL.createObjectURL(manifestBlob);
-            document.querySelector('link[rel="manifest"]').setAttribute('href', manifestUrl);
+        // ========== FIXED PWA: SERVICE WORKER (using blob URL, but now with better logging) ==========
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                const swCode = `
+                    const CACHE_NAME = 'jue-vpn-cache-v1';
+                    const urlsToCache = [
+                        '.',
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                        'https://cdn.tailwindcss.com',
+                        'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+                        'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+                        'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
+                        'https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png'
+                    ];
 
-            // 2. Robust service worker registration (using blob URL, but ensuring it's valid)
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                    const swCode = `
-                        const CACHE_NAME = 'jue-vpn-cache-v1';
-                        const urlsToCache = [
-                            '.',
-                            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-                            'https://cdn.tailwindcss.com',
-                            'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-                            'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
-                            'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
-                            'https://raw.githubusercontent.com/JVPNSHOP/JKVIPUDP/main/admin.png'
-                        ];
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => cache.addAll(urlsToCache))
+                        );
+                    });
 
-                        self.addEventListener('install', event => {
-                            event.waitUntil(
-                                caches.open(CACHE_NAME)
-                                    .then(cache => cache.addAll(urlsToCache))
-                            );
-                        });
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(response => response || fetch(event.request))
+                        );
+                    });
 
-                        self.addEventListener('fetch', event => {
-                            event.respondWith(
-                                caches.match(event.request)
-                                    .then(response => response || fetch(event.request))
-                            );
-                        });
-
-                        self.addEventListener('activate', event => {
-                            event.waitUntil(
-                                caches.keys().then(cacheNames => {
-                                    return Promise.all(
-                                        cacheNames.map(cacheName => {
-                                            if (cacheName !== CACHE_NAME) {
-                                                return caches.delete(cacheName);
-                                            }
-                                        })
-                                    );
-                                })
-                            );
-                        });
-                    `;
-                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                    const swUrl = URL.createObjectURL(swBlob);
-                    
-                    navigator.serviceWorker.register(swUrl)
-                        .then(reg => {
-                            console.log('✅ Service Worker registered (blob URL)', reg);
-                            // Optionally, update the install button state
-                        })
-                        .catch(err => {
-                            console.error('❌ Service Worker registration failed:', err);
-                        });
-                });
-            }
-        })();
+                    self.addEventListener('activate', event => {
+                        event.waitUntil(
+                            caches.keys().then(cacheNames => {
+                                return Promise.all(
+                                    cacheNames.map(cacheName => {
+                                        if (cacheName !== CACHE_NAME) {
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            })
+                        );
+                    });
+                `;
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                
+                navigator.serviceWorker.register(swUrl)
+                    .then(reg => {
+                        console.log('✅ Service Worker registered (blob URL):', reg);
+                        // If registration succeeds, we can optionally show a message
+                    })
+                    .catch(err => {
+                        console.error('❌ Service Worker registration failed:', err);
+                        // Inform user that install might not work
+                        const toast = document.getElementById('toast');
+                        toast.innerText = 'Install feature may not work. Try opening in Chrome/Edge.';
+                        toast.style.background = '#ef4444';
+                        toast.classList.remove('translate-y-20', 'opacity-0');
+                        setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 4000);
+                    });
+            });
+        }
 
         // ========== PWA Install Prompt ==========
         let deferredPrompt;
